@@ -13,3 +13,4 @@ config.local.sh
 .DS_Store
 *.swp
 *~
+.claude/

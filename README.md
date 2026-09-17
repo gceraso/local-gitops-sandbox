@@ -1,4 +1,4 @@
-# local_setup
+# local-gitops-sandbox
 
 A disposable GitOps cluster on your laptop: ArgoCD reconciling from a Gitea
 server running beside it, with a Moto Server standing in for AWS. Everything
@@ -15,8 +15,8 @@ manifests are identical either way.
 ## Quick start
 
 ```bash
-git clone https://github.com/gceraso/local_setup
-cd local_setup
+git clone https://github.com/gceraso/local-gitops-sandbox
+cd local-gitops-sandbox
 ./setup.sh
 
 # then, when you want ArgoCD to start deploying:
@@ -175,7 +175,7 @@ Before pushing, check nothing leaked:
 
 ```bash
 ./bin/check-no-secrets.sh
-DENYLIST=~/.config/local_setup/denylist ./bin/check-no-secrets.sh
+DENYLIST=~/.config/local-gitops-sandbox/denylist ./bin/check-no-secrets.sh
 ```
 
 It scans tracked files for account IDs, ARNs, access keys and anything in your
