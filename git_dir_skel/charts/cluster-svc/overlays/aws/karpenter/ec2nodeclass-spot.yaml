@@ -1,0 +1,20 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: default-spot
+  annotations:
+    kubernetes.io/description: "EC2NodeClass for spot-capacity NodePools"
+spec:
+  amiSelectorTerms:
+    - alias: al2023@latest
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 50Gi
+        volumeType: gp3
+        deleteOnTermination: true
+        encrypted: true
+  metadataOptions:
+    httpPutResponseHopLimit: 3
+  tags:
+    managed_by: Karpenter

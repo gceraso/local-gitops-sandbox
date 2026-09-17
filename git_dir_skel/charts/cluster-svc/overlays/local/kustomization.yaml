@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base only. The AWS-specific resources live in overlays/aws and are not
+# synced here - see the cluster-svc ApplicationSet, which selects the overlay
+# by cluster name.
+resources:
+  - ../../base

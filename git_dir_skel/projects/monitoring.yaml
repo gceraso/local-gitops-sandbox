@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: monitoring
+  namespace: argocd
+spec:
+  description: Monitoring and observability applications
+
+  # Allow all sources
+  sourceRepos:
+    - '*'
+
+  # Allow deployment to any namespace
+  destinations:
+    - namespace: '*'
+      server: '*'
+
+  # Allow all resource kinds
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

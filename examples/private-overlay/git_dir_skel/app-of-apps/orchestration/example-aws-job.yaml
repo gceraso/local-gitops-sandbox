@@ -1,0 +1,23 @@
+# Syncs the WorkflowTemplate alongside it. Dropping this file into
+# private/git_dir_skel/app-of-apps/orchestration/ is enough for the root
+# app-of-apps to pick it up on the next ./push-gitea.sh.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: example-aws-job
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ${GITEA_INTERNAL_URL}
+    targetRevision: main
+    path: workflows/example-aws-job
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

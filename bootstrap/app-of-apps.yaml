@@ -1,0 +1,30 @@
+# Root Application. Applying this is what starts ArgoCD reconciling.
+#
+# setup.sh does not apply it, so you get a working cluster to inspect before
+# anything begins deploying itself.
+#
+# Narrow `path` to deploy a subset:
+#   app-of-apps                deploy everything
+#   app-of-apps/orchestration  deploy only the orchestration Applications
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-of-apps
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ${GITEA_INTERNAL_URL}
+    targetRevision: main
+    path: app-of-apps
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

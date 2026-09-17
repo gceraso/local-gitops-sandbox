@@ -1,0 +1,66 @@
+# ArgoCD - lightweight local configuration.
+# Placeholders below are substituted by render() from config.sh.
+
+# Disable HA Redis - use standalone
+redis-ha:
+  enabled: false
+
+# Notifications - disabled for local
+notifications:
+  enabled: false
+
+# Dex - disabled for local (no SSO needed)
+dex:
+  enabled: false
+
+controller:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+server:
+  replicas: 1
+  service:
+    type: ClusterIP
+  extraArgs:
+    - --insecure
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hostname: ${ARGOCD_HOST}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+repoServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+applicationSet:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+configs:
+  params:
+    server.insecure: "true"
+    server.disable.auth: "false"
+  cm:
+    admin.enabled: "true"
+    timeout.reconciliation: 30s

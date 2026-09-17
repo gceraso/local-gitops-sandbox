@@ -1,0 +1,31 @@
+extends: default
+
+ignore: |
+  .render/
+  private/
+
+rules:
+  # Manifests read better wide than wrapped.
+  line-length:
+    max: 140
+    allow-non-breakable-words: true
+  # Both sequence styles appear throughout upstream Kubernetes and Argo docs.
+  # Normalising them would rewrite every example for no correctness gain.
+  indentation:
+    indent-sequences: whatever
+  # Argo interpolation inside a flow mapping - { value: "{{ inputs.x }}" } -
+  # trips the inner-spacing rules, and the spaces are required for readability.
+  braces:
+    max-spaces-inside: 1
+  brackets:
+    max-spaces-inside: 1
+  # Both styles appear across upstream chart docs; enforcing one adds churn
+  # without catching anything.
+  quoted-strings: disable
+  comments:
+    min-spaces-from-content: 1
+  truthy:
+    # GitHub Actions' "on:" key is not a boolean.
+    allowed-values: ["true", "false"]
+    check-keys: false
+  document-start: disable

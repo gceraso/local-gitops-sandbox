@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app-working
+  namespace: default
+  labels:
+    app: test-app-working
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-app-working
+  template:
+    metadata:
+      labels:
+        app: test-app-working
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 64Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app-broken
+  namespace: default
+  labels:
+    app: test-app-broken
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-app-broken
+  template:
+    metadata:
+      labels:
+        app: test-app-broken
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 64Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-app-paused
+  namespace: default
+  labels:
+    app: test-app-paused
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-app-paused
+  template:
+    metadata:
+      labels:
+        app: test-app-paused
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 64Mi

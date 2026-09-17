@@ -1,0 +1,83 @@
+# A container that talks to real AWS, run on demand from Argo Workflows.
+#
+# The pattern this demonstrates:
+#   - a locally built image, loaded with ./import-image.sh, never pushed
+#   - explicit `command`, because the emissary executor cannot introspect one
+#   - account-specific values as parameters, not literals
+#   - credentials by Secret reference, populated by ./refresh-aws-creds.sh
+#
+# Run it:
+#   ./import-image.sh my-job:latest
+#   ./refresh-aws-creds.sh my-profile
+#   argo submit --from workflowtemplate/example-aws-job -n argo \
+#     -p bucket=my-bucket
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: example-aws-job
+  namespace: argo
+spec:
+  entrypoint: run
+  serviceAccountName: argo-workflow
+  arguments:
+    parameters:
+      - name: image
+        value: my-job:latest
+      - name: bucket
+        value: ""
+      - name: object-keys
+        value: ""
+      # Created by ./refresh-aws-creds.sh PROFILE. Holds short-lived SSO
+      # credentials, so it needs refreshing whenever the session expires.
+      - name: secret-name
+        value: aws-creds-default
+  templates:
+    - name: run
+      inputs:
+        parameters:
+          - name: image
+          - name: bucket
+          - name: object-keys
+          - name: secret-name
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              path: /tmp/outputs/result
+      container:
+        image: "{{inputs.parameters.image}}"
+        # IfNotPresent, because the image was side-loaded into containerd and
+        # no registry has a copy to pull.
+        imagePullPolicy: IfNotPresent
+        # Argo's emissary executor reads the entrypoint from registry
+        # metadata, which a side-loaded image has none of. Stating the command
+        # here avoids the resulting "failed to find name in PATH" failure.
+        command: ["/opt/entrypoint.sh"]
+        env:
+          - name: AWS_REGION
+            value: "${AWS_REGION}"
+          - name: BUCKET
+            value: "{{inputs.parameters.bucket}}"
+          - name: OBJECT_KEYS
+            value: "{{inputs.parameters.object-keys}}"
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: "{{inputs.parameters.secret-name}}"
+                key: AWS_ACCESS_KEY_ID
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: "{{inputs.parameters.secret-name}}"
+                key: AWS_SECRET_ACCESS_KEY
+          - name: AWS_SESSION_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: "{{inputs.parameters.secret-name}}"
+                key: AWS_SESSION_TOKEN
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            memory: 512Mi

@@ -1,0 +1,18 @@
+# Inert on k3s: the ebs.csi.aws.com provisioner does not exist locally, so a
+# PVC bound to this class stays Pending forever. It is here so the overlay
+# structure renders and diffs the same way it would against a real cluster.
+#
+# Deliberately NOT annotated as the default class. k3s already has one
+# (local-path); a second default leaves the scheduler picking arbitrarily and
+# every PVC without an explicit storageClassName can end up unbound.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  type: gp3
+  encrypted: "true"
+  iops: "3000"
+  throughput: "125"

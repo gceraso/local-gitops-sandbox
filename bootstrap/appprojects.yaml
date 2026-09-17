@@ -1,0 +1,19 @@
+# Minimum AppProject set needed before ArgoCD can sync anything.
+# The full set lives in git_dir_skel/projects/ and is managed by ArgoCD itself
+# once the root app-of-apps is applied.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: orchestration
+  namespace: argocd
+spec:
+  description: Orchestration services (local)
+  sourceRepos:
+    - "*"
+  destinations:
+    - namespace: "*"
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"

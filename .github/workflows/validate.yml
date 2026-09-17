@@ -1,0 +1,89 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse with bash
+        run: |
+          for f in *.sh bin/*.sh lib/*.sh; do
+            bash -n "$f"
+          done
+
+      - name: shellcheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck --shell=bash --external-sources *.sh bin/*.sh lib/*.sh
+
+  no-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: ./bin/check-no-secrets.sh
+
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: yamllint
+        run: |
+          pipx install yamllint
+          yamllint -c .yamllint.yaml .
+
+      - name: Render templates
+        # Renders exactly as push-gitea.sh does, so an unsubstituted ${VAR}
+        # fails here rather than in a cluster.
+        run: |
+          export REPO_ROOT="$PWD"
+          . ./config.sh
+          . ./lib/common.sh
+          mkdir -p .ci
+          cp -R git_dir_skel .ci/git_dir_skel
+          cp -R bootstrap .ci/bootstrap
+          cp -R helm-values .ci/helm-values
+          cp -R manifests .ci/manifests
+          render_tree .ci
+          assert_rendered .ci
+
+      - name: kubeconform
+        # Validated against the Kubernetes version this sandbox actually runs
+        # (K8S_VERSION in config.sh), not against latest. Validating ahead
+        # accepts fields the running control plane does not have yet.
+        run: |
+          . ./config.sh
+          version="${K8S_VERSION#v}"
+          version="${version%%+*}"
+          echo "validating against Kubernetes ${version}"
+
+          curl -sSL -o /tmp/kubeconform.tar.gz \
+            https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar -xzf /tmp/kubeconform.tar.gz -C /tmp kubeconform
+
+          # -ignore-missing-schemas lets CRD-backed kinds (Application,
+          # WorkflowTemplate, ScaledObject, EC2NodeClass) through; there is no
+          # published schema for them and pinning a CRD catalogue would go
+          # stale faster than it would catch anything.
+          /tmp/kubeconform \
+            -kubernetes-version "$version" \
+            -strict \
+            -ignore-missing-schemas \
+            -summary \
+            .ci/bootstrap .ci/git_dir_skel .ci/manifests
+
+      - name: kustomize build
+        run: |
+          curl -sSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          for overlay in .ci/git_dir_skel/charts/*/overlays/*/; do
+            echo "building $overlay"
+            ./kustomize build "$overlay" > /dev/null
+          done

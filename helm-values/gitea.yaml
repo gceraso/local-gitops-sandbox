@@ -1,0 +1,81 @@
+# Gitea - local Git server that ArgoCD reads from.
+# Placeholders below are substituted by render() from config.sh.
+
+replicaCount: 1
+
+image:
+  rootless: true
+
+service:
+  http:
+    type: ClusterIP
+    port: 3000
+  ssh:
+    type: ClusterIP
+    port: 22
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: ${GITEA_HOST}
+      paths:
+        - path: /
+          pathType: Prefix
+
+# local-path is k3s's built-in provisioner, present under both Colima and k3d.
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: local-path
+
+gitea:
+  admin:
+    username: ${GITEA_ADMIN_USER}
+    password: ${GITEA_ADMIN_PASSWORD}
+    email: ${GITEA_ADMIN_EMAIL}
+
+  config:
+    server:
+      DOMAIN: ${GITEA_HOST}
+      ROOT_URL: http://${GITEA_HOST}
+      HTTP_PORT: 3000
+      DISABLE_SSH: false
+      SSH_PORT: 22
+      LFS_START_SERVER: false
+    database:
+      DB_TYPE: sqlite3
+    session:
+      PROVIDER: memory
+    cache:
+      ADAPTER: memory
+    queue:
+      TYPE: level
+    service:
+      DISABLE_REGISTRATION: false
+      REQUIRE_SIGNIN_VIEW: false
+      DEFAULT_ALLOW_CREATE_ORGANIZATION: true
+    repository:
+      DEFAULT_BRANCH: main
+    webhook:
+      ALLOWED_HOST_LIST: "*"
+    mirror:
+      ENABLED: true
+      DEFAULT_INTERVAL: 5m
+
+# SQLite and in-memory only; the subcharts would triple the footprint.
+postgresql:
+  enabled: false
+
+postgresql-ha:
+  enabled: false
+
+redis-cluster:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi

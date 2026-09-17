@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - cluster: local
+            url: https://kubernetes.default.svc
+  template:
+    metadata:
+      name: argocd
+    spec:
+      project: orchestration
+      source:
+        repoURL: https://argoproj.github.io/argo-helm
+        chart: argo-cd
+        targetRevision: 9.5.2
+        helm:
+          releaseName: argocd
+          values: |
+            redis-ha:
+              enabled: false
+            controller:
+              replicas: 1
+            server:
+              replicas: 1
+              extraArgs:
+                - --insecure
+              service:
+                type: NodePort
+                nodePortHttp: 30081
+                nodePortHttps: 30443
+            repoServer:
+              replicas: 1
+            applicationSet:
+              replicas: 1
+            configs:
+              params:
+                server.insecure: "true"
+      destination:
+        server: "{{url}}"
+        namespace: argocd
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

@@ -1,0 +1,16 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: test-app-broken-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: test-app-broken
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  triggers:
+  - type: prometheus
+    metadata:
+      serverAddress: http://non-existent-prometheus.default.svc.cluster.local:9090
+      query: sum(rate(http_requests_total[1m]))
+      threshold: "100"

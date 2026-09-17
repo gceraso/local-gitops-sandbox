@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-workflows
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://argoproj.github.io/argo-helm'
+    chart: argo-workflows
+    targetRevision: 1.0.13
+    helm:
+      values: |
+        server:
+          authMode: server
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts:
+              - ${ARGO_HOST}
+            paths:
+              - /
+            pathType: Prefix
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

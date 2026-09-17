@@ -1,0 +1,91 @@
+# AWS API emulator, backing External Secrets. Moto Server rather than
+# LocalStack: since 2026-03-23 LocalStack's "latest" tag requires a
+# LOCALSTACK_AUTH_TOKEN (account signup), and there's no free tag beyond
+# 4.4.0. Moto is open source (Apache-2.0) with no account/token gate.
+#
+# Applied directly by setup.sh with kubectl -- there's no official Helm
+# chart for Moto Server. Namespace and object names say "moto" to match
+# what's actually running; LOCALSTACK_HOST/LOCALSTACK_INTERNAL_URL in
+# config.sh keep their names since the rest of the sandbox refers to this
+# by role, not by which emulator is behind it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: moto
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moto
+  namespace: moto
+  labels:
+    app: moto
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: moto
+  template:
+    metadata:
+      labels:
+        app: moto
+    spec:
+      containers:
+        - name: moto
+          image: motoserver/moto:${MOTO_IMAGE_TAG}
+          env:
+            - name: MOTO_PORT
+              value: "4566"
+          ports:
+            - name: edge
+              containerPort: 4566
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          # No HTTP health endpoint is documented for the image; a plain
+          # socket check is the safe cross-version probe.
+          readinessProbe:
+            tcpSocket:
+              port: 4566
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 4566
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: moto
+  namespace: moto
+spec:
+  selector:
+    app: moto
+  ports:
+    - name: edge
+      port: 4566
+      targetPort: 4566
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: moto
+  namespace: moto
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: ${LOCALSTACK_HOST}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: moto
+                port:
+                  number: 4566
